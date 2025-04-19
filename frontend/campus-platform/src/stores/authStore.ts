@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { AuthService } from '../services/authService';
 import { User } from '@/types';
 
+
 interface AuthState {
   user: User | null;
   token: string | null;
@@ -15,7 +16,7 @@ interface AuthState {
 
 export const authStore = create<AuthState>((set) => ({
   user: null,
-  token: localStorage.getItem('token') || null,
+  token: null,
   loading: false,
   error: null,
 

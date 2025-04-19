@@ -1,33 +1,29 @@
 // src/services/clubService.ts
 import api from './api';
-import {Club} from "@/types";
-
+import { Club } from '../types';
 
 export const ClubService = {
-  getClubs: async (): Promise<any[]> => {
-    try {
-      const response = await api.get('/clubs/');
-      return response.data;
-    } catch (error) {
-      throw new Error('Failed to fetch clubs');
-    }
+  getClubs: async (): Promise<Club[]> => {
+    const response = await api.get<Club[]>('/clubs/');
+    return response.data;
   },
 
-  createClub: async (Club: Club): Promise<any> => {
-    try {
-      const response = await api.post('/clubs/', Club);
-      return response.data;
-    } catch (error) {
-      throw new Error('Failed to create club');
-    }
+  createClub: async (clubData: Partial<Club>): Promise<Club> => {
+    const response = await api.post<Club>('/clubs/', clubData);
+    return response.data;
   },
 
-  getClubDetails: async (clubId: string | number): Promise<any> => {
-    try {
-      const response = await api.get(`/clubs/${clubId}/`);
-      return response.data;
-    } catch (error) {
-      throw new Error(`Failed to fetch club details for ID: ${clubId}`);
-    }
+  getClubDetails: async (clubId: number): Promise<Club> => {
+    const response = await api.get<Club>(`/clubs/${clubId}/`);
+    return response.data;
+  },
+
+  updateClub: async (clubId: number, clubData: Partial<Club>): Promise<Club> => {
+    const response = await api.put<Club>(`/clubs/${clubId}/`, clubData);
+    return response.data;
+  },
+
+  deleteClub: async (clubId: number): Promise<void> => {
+    await api.delete(`/clubs/${clubId}/`); 
   }
 };

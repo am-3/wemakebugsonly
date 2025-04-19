@@ -1,21 +1,19 @@
-// src/services/api.js
-import axios from 'axios';
+// src/services/api.ts
+import axios, { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import { authStore } from '../stores/authStore';
 
-const api = axios.create({
+const api: AxiosInstance = axios.create({
   baseURL: process.env.REACT_APP_API_BASE_URL,
 });
 
-// Request interceptor
-api.interceptors.request.use(config => {
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = authStore.getState().token;
-  if (token) {
+  if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Response interceptor
 api.interceptors.response.use(
   response => response,
   error => {
