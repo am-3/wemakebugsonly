@@ -1,7 +1,7 @@
 // src/stores/clubsStore.js
 import { create } from 'zustand';
 import { ClubService } from '../services/clubService';
-import { Club } from '@/types';
+import { Club } from '../types';
 
 interface ClubsState {
   clubs: Club[];

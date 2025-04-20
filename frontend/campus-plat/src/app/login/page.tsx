@@ -14,7 +14,9 @@ export default function LoginPage ()  {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     await login(email, password);
-    // On success, redirect or show message
+    // if (isAuthenticated) {
+    //   navigate('/dashboard');
+    // }
   };
 
   return (

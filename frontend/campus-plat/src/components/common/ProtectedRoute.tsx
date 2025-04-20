@@ -1,25 +1,25 @@
-// src/components/common/ProtectedRoute.tsx
+// src/components/ProtectedRoute.tsx
+import { Navigate } from 'react-router-dom';
+import { useAuthStore } from '../../stores/authStore';
 import { ReactNode } from 'react';
-import { authStore } from '../../stores/authStore';
-import Link from 'next/link';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  allowedRoles?: ('student' | 'faculty' | 'admin')[];
+  allowedRoles: string[];
 }
 
 const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
-  const { user, loading } = authStore();
-  
-  if (loading) return <div>Loading...</div>;
-  
-  if (!user) return <Link href="/login">Login</Link>;
-  
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Link href="//unauthorized">Unauthorized</Link>;
+  const { isAuthenticated, role } = useAuthStore();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
 
-  return <>{children}</>;
+  if (allowedRoles && !allowedRoles.includes(role ?? '')) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
 };
 
 export default ProtectedRoute;

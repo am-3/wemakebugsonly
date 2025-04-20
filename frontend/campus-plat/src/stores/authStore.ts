@@ -4,6 +4,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { z } from 'zod';
 import {jwtDecode} from 'jwt-decode';
 import api from '../services/api';
+import { User } from '../types';
 
 // Schema validation
 const roles = z.enum(['student', 'faculty', 'admin']);
@@ -23,6 +24,8 @@ interface AuthState {
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
+  role: Role | null;
+  user: User | null;
   login: (username: string, password: string) => Promise<void>;
   signup: (userData: SignupData) => Promise<void>;
   logout: () => void;
@@ -34,8 +37,10 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       accessToken: localStorage.getItem('accessToken'),
-      tokenData: null,
-      isAuthenticated: false,
+      tokenData: localStorage.getItem('tokenData') ? JSON.parse(localStorage.getItem('tokenData') || '') : null,
+      isAuthenticated: localStorage.getItem('isAuthenticated') === "true",
+      role: localStorage.getItem('role') == 'student' ? 'student' : localStorage.getItem('role') == 'faculty' ? 'faculty' : 'admin',
+      user: null,
       loading: false,
       error: null,
 
@@ -43,9 +48,15 @@ export const useAuthStore = create<AuthState>()(
         set({ loading: true, error: null });
         try {
           const response = await api.post('/auth/login/', { username, password });
+          console.log(response.data);
           const { access } = response.data;
           const decoded = TokenDataSchema.parse(jwtDecode(access));
+
           
+          localStorage.setItem('accessToken', access);
+          localStorage.setItem('tokenData', JSON.stringify(decoded));
+          localStorage.setItem('isAuthenticated', "true");
+          localStorage.setItem('role', decoded.role);
           set({
             accessToken: access,
             tokenData: decoded,
@@ -86,6 +97,9 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('tokenData');
+        localStorage.removeItem('isAuthenticated');
         set({
           accessToken: null,
           tokenData: null,

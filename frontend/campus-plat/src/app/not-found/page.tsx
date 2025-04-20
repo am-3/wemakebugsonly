@@ -54,7 +54,7 @@ export default function NotFoundPage() {
           />
         </svg>
       </div>
-      <style jsx global>{`
+      <style jsx="true" global="true">{`
         .animate-spin-slow {
           animation: spin 3s linear infinite;
         }

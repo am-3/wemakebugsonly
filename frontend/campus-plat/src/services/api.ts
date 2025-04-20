@@ -3,7 +3,8 @@ import axios, { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig } 
 import { useAuthStore } from '../stores/authStore';
 
 const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.REACT_APP_API_BASE_URL,
+  // url: import.meta.env.REACT_APP_API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL,
 });
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
@@ -11,6 +12,9 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+    config.headers['Content-Type'] = 'application/json';
+    config.headers['Access-Control-Allow-Origin'] = '*';
   return config;
 });
 
@@ -23,7 +27,7 @@ api.interceptors.response.use(
     } else if (error.response?.status === 403) {
       window.location.href = '/unauthorized';
     } else if (error.response?.status === 404) {
-      window.location.href = '/not-found';
+      // window.location.href = '/not-found';
     } else if (error.response?.status === 500) {
       window.location.href = '/internal-server-error';
     }
