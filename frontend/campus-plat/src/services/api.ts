@@ -12,9 +12,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  
-    config.headers['Content-Type'] = 'application/json';
-    config.headers['Access-Control-Allow-Origin'] = '*';
+  config.headers['Content-Type'] ='application/json';
   return config;
 });
 

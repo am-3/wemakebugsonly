@@ -47,7 +47,7 @@ export const useAuthStore = create<AuthState>()(
       login: async (username, password) => {
         set({ loading: true, error: null });
         try {
-          const response = await api.post('/auth/login/', { username, password });
+          const response = await api.post('/auth/login/', { username, password }, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
           console.log(response.data);
           const { access } = response.data;
           const decoded = TokenDataSchema.parse(jwtDecode(access));
