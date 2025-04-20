@@ -1,5 +1,7 @@
+from .models import User
+from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 from .models import (
     AttendanceSession,
     Attendance,
@@ -16,6 +18,7 @@ from .models import (
     ClubMembership,
     Event,
     EventRegistration,
+    User,
 )
 from django.utils import timezone
 
@@ -142,3 +145,28 @@ class EventRegistrationSerializer(serializers.ModelSerializer):
         model = EventRegistration
         fields = ['id', 'event', 'user',
                   'registration_date', 'attendance_status']
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'first_name',
+            'last_name',
+            'roll_no',
+            'email',
+            'password',
+            'profile_picture',
+            'role',
+            'created_at',
+            'updated_at',
+        ]
+        extra_kwargs = {
+            # Prevents password from being returned in responses
+            'password': {'write_only': True},
+        }
+
+    def validate_password(self, value):
+        # Hash the password before storing it.
+        return make_password(value)

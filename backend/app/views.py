@@ -1,4 +1,9 @@
 # views.py
+from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+from .models import User  # Import your custom User model
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import AllowAny, IsAuthenticated
 import io
 import base64
 # import face_recognition  # Would need to be installed
@@ -22,27 +27,92 @@ from rest_framework import status
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 
+from .serializers import UserSerializer
+
+##############################################################################################################################
+
+# Register User (Student, Faculty)
+class RegisterView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serialized_user = UserSerializer(data=request.data)
+        if serialized_user.is_valid():
+            serialized_user.save()
+            return Response({'message': 'User has been registered'})
+        return Response({'message': serialized_user.errors})
+
 
 class LoginView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
-        username = request.data.get('username')
+        email = request.data.get('email')
         password = request.data.get('password')
 
-        user = authenticate(username=username, password=password)
-
-        if user:
-            token, _ = Token.objects.get_or_create(user=user)
+        user = authenticate(email=email, password=password)
+        if user is not None:
+            # Generate a fresh token
+            refresh = RefreshToken.for_user(user)
             return Response({
-                'token': token.key,
-                'user_id': user.id,
-                'username': user.username,
-                'role': user.role
+                'refresh_token': str(refresh),
+                'access_token': str(refresh.access_token),
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'role': user.role,
+                },
             }, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Invalid email or password'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        return Response({
-            'error': 'Invalid credentials'
-        }, status=status.HTTP_401_UNAUTHORIZED)
 
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            # Get the refresh token from the request data
+            refresh_token = request.data.get('refresh_token')
+            token = RefreshToken(refresh_token)
+            # Blacklist the refresh token
+            token.blacklist()
+
+            return Response({'message': 'Successfully logged out'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TokenRefreshView(APIView):
+    """
+    Handles refreshing the access token using a valid refresh token.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        # Extract the refresh token from the request
+        refresh_token = request.data.get('refresh_token')
+
+        if not refresh_token:
+            return Response({'error': 'Refresh token is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Decode the refresh token
+            token = RefreshToken(refresh_token)
+
+            # Create a new access token
+            new_access_token = token.access_token
+
+            return Response({
+                'access_token': str(new_access_token)
+            }, status=status.HTTP_200_OK)
+        except TokenError as e:
+            # Handle invalid or expired refresh tokens
+            return Response({'error': 'Invalid or expired refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
+
+##############################################################################################################################
 
 # views.py
 
