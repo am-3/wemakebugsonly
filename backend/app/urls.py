@@ -29,8 +29,8 @@ urlpatterns = [
 
     # Clubs
     path('api/clubs/', views.ClubListCreateView.as_view(), name='club-list'),
+    path('api/clubs/members/', views.ClubMembershipListCreateView.as_view(), name='club-members'),
     # path('api/clubs/<int:club_id>/', views.ClubDetailView.as_view(), name='club-detail'),
-    # path('api/clubs/<int:club_id>/members/', views.ClubMemberListView.as_view(), name='club-members'),
     # path('api/clubs/<int:club_id>/members/<int:user_id>/', views.ClubMemberDetailView.as_view(), name='club-member-detail'),
 
     # Events

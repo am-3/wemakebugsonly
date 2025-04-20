@@ -1,4 +1,6 @@
 # views.py
+from functools import partial
+import re
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from .models import User  # Import your custom User model
@@ -10,7 +12,7 @@ import base64
 import numpy as np
 from PIL import Image
 from datetime import datetime
-from .serializers import AttendanceSessionSerializer
+from .serializers import AttendanceSessionSerializer, ClubMembershipSerializer
 from .models import AttendanceSession, Attendance, FacialRecognitionData, AttendanceLog
 from .serializers import CourseSerializer, AssessmentSerializer, GradeReportSerializer
 from .models import Course, StudentCourse, Assessment, StudentAssessment, GradeReport, Attendance
@@ -32,6 +34,8 @@ from .serializers import UserSerializer
 ##############################################################################################################################
 
 # Register User (Student, Faculty)
+
+
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
@@ -121,12 +125,18 @@ class ClubListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        club_name = request.GET.get("club_name", None)
+        if club_name:
+            if Club.objects.filter(name=club_name).exists():
+                club = Club.objects.get(name=club_name)
+                serializer = ClubSerializer(club)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response({"error": f"No club exists with the name: {club_name}"}, status=status.HTTP_404_NOT_FOUND)
         clubs = Club.objects.all()
         serializer = ClubSerializer(clubs, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        # Check if user is admin or faculty
         if request.user.role not in ['admin', 'faculty']:
             return Response({
                 'error': 'Only admins or faculty can create clubs'
@@ -135,17 +145,135 @@ class ClubListCreateView(APIView):
         serializer = ClubSerializer(data=request.data)
         if serializer.is_valid():
             club = serializer.save(faculty_advisor=request.user)
-
-            # Create club membership for creator as president
-            ClubMembership.objects.create(
-                club=club,
-                user=request.user,
-                role='president',
-                status='active'
-            )
-
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request):
+        # Check if user is admin or faculty
+        if request.user.role not in ['admin', 'faculty']:
+            return Response({
+                'error': 'Only admins or faculty can create clubs'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        club = Club.objects.get(faculty_advisor=request.user)
+
+        serializer = ClubSerializer(club, data=request.data, partial=True)
+        if serializer.is_valid():
+            club = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request):
+        if request.user.role not in ['admin', 'faculty']:
+            return Response({
+                'error': 'Only admins or faculty can delete clubs'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        club_name = request.data['club_name']
+        if Club.objects.filter(name=club_name).exists():
+            club = Club.objects.get(name=request.data["club_name"])
+            club.delete()
+            return Response({"message": "Club deleted successfully"}, status=status.HTTP_200_OK)
+        return Response({"message": f"No club exist with the name: {club_name}"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ClubMembershipListCreateView(APIView):
+    def get(self, request):
+        club_name = request.GET.get('club_name', None)
+        member_roll_no = request.GET.get('member_roll_no', None)
+        if club_name:
+            if Club.objects.filter(name=club_name).exists():
+                club = Club.objects.get(name=club_name)
+                club_member_details = ClubMembership.objects.filter(club=club)
+                serialized_data = ClubMembershipSerializer(
+                    club_member_details, many=True)
+                return Response(serialized_data.data)
+            return Response({"error": f"No club exists with the name: {club_name}"})
+        elif member_roll_no:
+            member = User.objects.get(roll_no=member_roll_no)
+            club_names = ClubMembership.objects.filter(
+                user=member, role='coordinator')
+            club_names = club_names.values_list("club__name", flat=True)
+            return Response({"club_names": club_names}, status=status.HTTP_200_OK)
+        serialized_data = ClubMembershipSerializer(
+            ClubMembership.objects.all(), many=True)
+        return Response(serialized_data.data)
+
+    def post(self, request):
+        if request.user.role not in ['faculty', 'coordinator']:
+            return Response({
+                'error': 'Only coordinators or faculties can add club members'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        # data = { club, user, role, join_date, status }
+
+        club = request.data.get('club')  # club name
+        user = request.data.get('user')  # user id (roll no)
+
+        del request.data['club']
+        del request.data['user']
+
+        club = Club.objects.get(name=club)
+        user = User.objects.get(roll_no=user)
+
+        request.data['club'] = club.pk
+        request.data['user'] = user.pk
+
+        serializer = ClubMembershipSerializer(data=request.data)
+        if serializer.is_valid():
+            club_member = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request):
+        if request.user.role not in ['faculty', 'coordinator']:
+            return Response({
+                'error': 'Only coordinators or faculties can add club members'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        # data = { club, user, role, join_date, status }
+
+        club = request.data.get('club')  # club name
+        user = request.data.get('user')  # user id (roll no)
+
+        del request.data['club']
+        del request.data['user']
+
+        club = Club.objects.get(name=club)
+        user = User.objects.get(roll_no=user)
+
+        club_membership_obj = ClubMembership.objects.get(club=club, user=user)
+
+        serializer = ClubMembershipSerializer(
+            club_membership_obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            club_member = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request):
+        if request.user.role not in ['faculty', 'coordinator']:
+            return Response({
+                'error': 'Only coordinators or faculties can add club members'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        # data = { club, user, role, join_date, status }
+
+        club = request.data.get('club')  # club name
+        user = request.data.get('user')  # user id (roll no)
+
+        del request.data['club']
+        del request.data['user']
+
+        club = Club.objects.get(name=club)
+        user = User.objects.get(roll_no=user)
+
+        if ClubMembership.objects.filter(club=club, user=user).exists():
+            club_membership_obj = ClubMembership.objects.get(
+                club=club, user=user)
+            club_membership_obj.delete()
+            return Response({"message": "User removed successfully"})
+        return Response({"message": "User not present in Club"})
 
 
 class EventRegistrationView(APIView):

@@ -61,16 +61,13 @@ class Club(models.Model):
         ('suspended', 'Suspended'),
     ]
 
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
     description = models.TextField(blank=True, null=True)
     logo = models.CharField(max_length=255, blank=True, null=True)
     creation_date = models.DateField()
-    status = models.CharField(
-        max_length=20, choices=STATUS_CHOICES, default='active')
-    faculty_advisor = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, related_name='advised_clubs')
-    president = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, related_name='presided_clubs')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    faculty_advisor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='advised_clubs')
+    # coordinator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='coordinated_clubs')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -81,8 +78,7 @@ class Club(models.Model):
 class ClubMembership(models.Model):
     ROLE_CHOICES = [
         ('member', 'Member'),
-        ('officer', 'Officer'),
-        ('treasurer', 'Treasurer'),
+        ('coordinator', 'Coordinator'),
     ]
 
     STATUS_CHOICES = [
@@ -93,11 +89,9 @@ class ClubMembership(models.Model):
 
     club = models.ForeignKey(Club, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    role = models.CharField(
-        max_length=20, choices=ROLE_CHOICES, default='member')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member')
     join_date = models.DateField(auto_now_add=True)
-    status = models.CharField(
-        max_length=20, choices=STATUS_CHOICES, default='active')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -105,7 +99,7 @@ class ClubMembership(models.Model):
         unique_together = ('club', 'user')
 
     def __str__(self):
-        return f"{self.user.username} in {self.club.name}"
+        return f"{self.user.first_name} in {self.club.name}"
 
 
 class Event(models.Model):

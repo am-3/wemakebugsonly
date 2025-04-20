@@ -123,9 +123,9 @@ class ResourceBookingSerializer(serializers.ModelSerializer):
 class ClubSerializer(serializers.ModelSerializer):
     class Meta:
         model = Club
-        fields = ['id', 'name', 'description', 'faculty_advisor']
-        read_only_fields = ['faculty_advisor']
-
+        fields = ['id', 'name', 'description', 'logo', 'creation_date', 'status', 'faculty_advisor', 
+                #   'coordinator'
+                  ]
 
 class ClubMembershipSerializer(serializers.ModelSerializer):
     class Meta:
