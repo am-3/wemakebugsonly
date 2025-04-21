@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const { isAuthenticated, loading } = useAuthStore();
+  const { isAuthenticated, loading, accessToken } = useAuthStore();
+  console.log(accessToken);
 
   useEffect(() => {
     if (!loading) {

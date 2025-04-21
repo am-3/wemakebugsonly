@@ -5,18 +5,23 @@ import { useAuthStore } from '../../stores/authStore';
 import '../../globals.css';
 import { useNavigate } from 'react-router-dom';
 
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
+
 export default function LoginPage ()  {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, loading, error, isAuthenticated } = useAuthStore();
+  
+  const [showPassword, setShowPassword] = useState(false);
+  const { login, loading, error } = useAuthStore();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     await login(email, password);
-    // if (isAuthenticated) {
-    //   navigate('/dashboard');
-    // }
+    console.log(useAuthStore.getState().isAuthenticated);
+    if (useAuthStore.getState().isAuthenticated) {
+      navigate('/dashboard');
+    }
   };
 
   return (
@@ -46,10 +51,11 @@ export default function LoginPage ()  {
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
               Password
             </label>
-            <input
+            <div className="relative">
+              <input
               id="password"
               name="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               required
               className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
@@ -57,6 +63,16 @@ export default function LoginPage ()  {
               onChange={e => setPassword(e.target.value)}
               disabled={loading}
             />
+            <button
+                  type="button"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                  onMouseDown={() => setShowPassword(true)}
+                  onMouseUp={() => setShowPassword(false)}
+                  onMouseLeave={() => setShowPassword(false)}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+            </div>
           </div>
           {error && (
             <div className="text-red-600 text-sm text-center">{error}</div>

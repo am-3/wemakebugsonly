@@ -23,7 +23,7 @@ export const ClubService = {
     return response.data;
   },
 
-  deleteClub: async (clubId: number): Promise<void> => {
-    await api.delete(`/clubs/${clubId}/`); 
+  deleteClub: async (clubName: string): Promise<void> => {
+    await api.delete(`/clubs/`,{data:{club_name:clubName}});
   }
 };

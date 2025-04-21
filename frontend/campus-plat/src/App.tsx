@@ -8,6 +8,7 @@ import EventsPage from "./app/dashboard/upcoming-events/page";
 import ResourceBookingsPage from "./app/dashboard/resource-bookings/page";
 import ClubActivitiesPage from "./app/dashboard/club-activities/page";
 import DashboardRouter from "./components/DashboardRouter";
+import ClubsPage from "./app/dashboard/club-activities/page";
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/dashboard/upcoming-events" element={<EventsPage />} />
         <Route path="/dashboard/resource-bookings" element={<ResourceBookingsPage />} />
         <Route path="/dashboard/club-activities" element={<ClubActivitiesPage />} />
+        <Route path="/clubs/:clubId" element={<ClubsPage />} />
         
         {/* more routes */}
       </Routes>
