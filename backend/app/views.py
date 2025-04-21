@@ -2,10 +2,15 @@ from datetime import datetime, timedelta
 import base64
 import io
 import re
-
 import numpy as np
 from PIL import Image
+
 from django.contrib.auth import authenticate
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponseForbidden
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -13,6 +18,7 @@ from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
+# Import models and serializers
 from .models import (
     User, Course, StudentCourse, Assessment, StudentAssessment, GradeReport,
     AttendanceSession, Attendance, FacialRecognitionData, AttendanceLog,
@@ -24,21 +30,7 @@ from .serializers import (
     UserSerializer, CourseSerializer, AssessmentSerializer, GradeReportSerializer,
     AttendanceSessionSerializer, ClubMembershipSerializer,
     ResourceSerializer, ClubSerializer, EventSerializer
-    # BookingSerializer,  # Uncomment when ready
 )
-
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponseForbidden
-from django.contrib.auth.decorators import login_required
-from .models import Event, Club, User
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
-from .models import Event
-from .serializers import EventSerializer
-from django.utils import timezone
-
 ##############################################################################################################################
 # Authentication
 class RegisterView(APIView):
