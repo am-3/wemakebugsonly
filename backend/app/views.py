@@ -46,6 +46,22 @@ class RegisterView(APIView):
             return Response({'message': 'User has been registered'})
         return Response({'message': serialized_user.errors})
 
+class UserDetailView(APIView):
+    '''
+    Returns the user details
+    '''
+    # permission_classes = [IsAuthenticated]
+
+    def get(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+            serializer = UserSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'User not found'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 class LoginView(APIView):
     '''
