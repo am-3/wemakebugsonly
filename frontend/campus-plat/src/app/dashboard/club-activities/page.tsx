@@ -4,22 +4,16 @@ import ClubCard from '../../../components/clubs/ClubCard';
 import ClubModal from '../../../components/clubs/ClubModel';
 import { useClubsStore } from '../../../stores/clubsStore';
 import { useParams } from 'react-router-dom';
+import { useAuthStore } from '../../../stores';
 
 const ClubsPage: React.FC = () => {
   const clubId = parseInt(useParams().clubId!);
+  const {user} = useAuthStore();
   const { clubs, createClub, updateClub, deleteClub } = useClubsStore();
   const [selectedClub, setSelectedClub] = useState<Club | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (clubId) {
-      const club = clubs.find(c => c.id === clubId);
-      if (club) {
-        setSelectedClub(club);
-        // setIsModalOpen(true);
-      }
-    } 
-  })
+
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -34,22 +28,27 @@ const ClubsPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {clubs.map(club => (
-          <ClubCard
-            key={club.id}
-            club={club}
-            onEdit={() => { setSelectedClub(club); setIsModalOpen(true); }}
-            onDelete={() => deleteClub(club.id)}
-          />
-        ))}
+        {clubs
+          .filter(club => club.id === clubId) // Filter clubs by clubId
+          .map(club => (
+            <ClubCard
+              key={club.id}
+              club={club}
+              onEdit={() => {
+                setSelectedClub(club);
+                setIsModalOpen(true);
+              }}
+              onDelete={() => deleteClub(club)}
+            />
+          ))}
       </div>
 
-      <ClubModal
+      {/* <ClubModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         club={selectedClub}
         onSubmit={selectedClub ? updateClub : createClub}
-      />
+      /> */}
     </div>
   );
 };

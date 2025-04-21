@@ -161,6 +161,10 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('tokenData');
         localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('role');
+        localStorage.removeItem('user');
+        localStorage.removeItem('auth-storage');
+        window.location.href = '/';
         set({
           accessToken: null,
           refreshToken: null,

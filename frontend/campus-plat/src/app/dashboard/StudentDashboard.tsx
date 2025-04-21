@@ -1,89 +1,47 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore, useClubsStore } from '../../stores';
 // import { useEventStore, useCourseStore, useResourceStore} from '../../stores';
-import { CartesianGrid, Line, LineChart, PieChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
-import { Calendar, BookOpen, Award, Clock, Trello } from 'react-feather';
+import { Calendar, Trello } from 'react-feather';
+import { useNavigate } from 'react-router-dom';
+import { useEventStore } from '../../stores/eventStore';
 
 const StudentDashboard = () => {
-  const { user } = useAuthStore();
+  const navigate  = useNavigate();
+  const { user, logout } = useAuthStore();
   const { clubs, fetchClubs } = useClubsStore();
-  // const { events } = useEventStore();
-  // const { courses } = useCourseStore();
-  // const { resources } = useResourceStore();
-  // const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
+  const { events, fetchEvents } = useEventStore();
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-
-  // Mock data for charts (replace with real data from stores)
-  const gradeData = [
-    { month: 'Jan', grade: 75 },
-    { month: 'Feb', grade: 82 },
-    { month: 'Mar', grade: 20 },
-  ];
-
-  const attendanceData = [
-    { name: 'Present', value: 85 },
-    { name: 'Absent', value: 15 },
-  ];
 
   useEffect(() => {
     Promise.all([
       fetchClubs(),
-      // useEventStore.getState().fetchEvents(),
-      // useCourseStore.getState().fetchCourses(),
-      // useResourceStore.getState().fetchResources(),
+      fetchEvents(),
     ]);
-    // Fetch initial data on component mount
-    // useEventStore.getState().fetchEvents();
-    // useCourseStore.getState().fetchCourses();
-    // useResourceStore.getState().fetchResources();
   }, []);
+
+  const showClubDetails = (clubId: number) => {
+    navigate(`/clubs/${clubId}`);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Dashboard Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Welcome back, {user?.first_name}</h1>
-        <p className="text-gray-600 mt-2">Here's your academic overview</p>
+      <div className="flex justify-between items-center mb-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-800">Welcome back, {user?.first_name}</h1>
+          <p className="text-gray-600 mt-2">Here's your academic overview</p>
+        </div>
+        
+        <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          onClick={() => logout()}>
+          Logout
+        </button>
       </div>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Academic Overview */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Performance Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Grade Trend Card */}
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <div className="flex items-center mb-4">
-                <Award className="w-6 h-6 text-blue-600 mr-2" />
-                <h3 className="text-lg font-semibold">Grade Trend</h3>
-              </div>
-              <ResponsiveContainer width="100%" aspect={1.8}>
-              <LineChart
-                data={gradeData}
-                margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                style={{color:"black"}}
-              >
-                <Line type="monotone" dataKey="grade" stroke="#8884d8" strokeWidth={3} />
-                <CartesianGrid stroke="#eee" />
-                <XAxis dataKey="month" />
-                <YAxis />
-              </LineChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Attendance Card */}
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <div className="flex items-center mb-4">
-                <Clock className="w-6 h-6 text-green-600 mr-2" />
-                <h3 className="text-lg font-semibold">Attendance</h3>
-              </div>
-              <PieChart width={400} height={200}>
-                {/* Pie chart configuration */}
-              </PieChart>
-            </div>
-          </div>
-
+        <div className="lg:col-span-3 space-y-6">
           {/* Upcoming Events Section */}
           <div className="bg-white p-6 rounded-xl shadow-sm">
             <div className="flex items-center mb-4">
@@ -118,54 +76,11 @@ const StudentDashboard = () => {
                     <h4 className="font-medium">{club.name}</h4>
                     <p className="text-sm text-gray-600">{club.description}</p>
                   </div>
-                  <button className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200">
-                    Register
+                  <button className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200" onClick={() => showClubDetails(club.id)}>
+                    View
                   </button>
                 </div>
               ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column - Quick Actions */}
-        <div className="space-y-6">
-          {/* Quick Access Card */}
-          <div className="bg-white p-6 rounded-xl shadow-sm">
-            <div className="flex items-center mb-4">
-              <BookOpen className="w-6 h-6 text-orange-600 mr-2" />
-              <h3 className="text-lg font-semibold">Quick Access</h3>
-            </div>
-            <div className="space-y-3">
-              <button className="w-full p-3 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200">
-                Book Study Room
-              </button>
-              <button className="w-full p-3 bg-green-100 text-green-600 rounded-lg hover:bg-green-200">
-                Submit Assignment
-              </button>
-              <button className="w-full p-3 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200">
-                View Course Materials
-              </button>
-            </div>
-          </div>
-
-          {/* Course Progress */}
-          <div className="bg-white p-6 rounded-xl shadow-sm">
-            <h3 className="text-lg font-semibold mb-4">Course Progress</h3>
-            <div className="space-y-4">
-              {/* {courses.slice(0, 3).map(course => (
-                <div key={course.id} className="flex items-center">
-                  <div className="flex-1">
-                    <h4 className="font-medium">{course.name}</h4>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${course.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                  <span className="text-sm text-gray-600 ml-2">{course.progress}%</span>
-                </div>
-              ))} */}
             </div>
           </div>
         </div>

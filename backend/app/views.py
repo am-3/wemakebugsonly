@@ -300,7 +300,7 @@ class EventListCreateView(APIView):
 
     def post(self, request):
         # Check if user has permissions to create event (coordinator or faculty)
-        if not request.user.has_perm('can_create_event'):
+        if request.user.role not in ['faculty', 'coordinator']:
             return Response({'error': 'You do not have permission to create events'}, status=status.HTTP_403_FORBIDDEN)
         
         serializer = EventSerializer(data=request.data)

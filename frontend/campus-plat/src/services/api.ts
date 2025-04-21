@@ -21,32 +21,32 @@ api.interceptors.response.use(
   response => response,
   async error => {
     if (error.response?.status === 401) {
-      console.log(error.request);
+      // console.log(error.request);
       
-      const authStore = useAuthStore.getState();
-      if (error.request?.responseUrl?.includes('api/auth/refresh')) {
-        authStore.logout();
+      // const authStore = useAuthStore.getState();
+      // if (error.request?.responseUrl?.includes('api/auth/refresh')) {
+      //   authStore.logout();
+      //   window.location.href = '/login';
+      //   return Promise.reject(error);
+      // }
+
+      // const refreshToken = authStore.refreshToken;
+
+      // if (refreshToken) {
+      //   try {
+      //     authStore.refreshTokenInit();
+      //   } catch (refreshError) {
+      //     authStore.logout();
+      //     window.location.href = '/login';
+      //   }
+      // } else {
+        useAuthStore.getState().logout();
         window.location.href = '/login';
-        return Promise.reject(error);
-      }
-
-      const refreshToken = authStore.refreshToken;
-
-      if (refreshToken) {
-        try {
-          authStore.refreshTokenInit();
-        } catch (refreshError) {
-          authStore.logout();
-          window.location.href = '/login';
-        }
-      } else {
-        // authStore.logout();
-        // window.location.href = '/login';
-      }
+      // }
       // useAuthStore.getState().logout();
       // window.location.href = '/login';
     } else if (error.response?.status === 403) {
-      window.location.href = '/unauthorized';
+      // window.location.href = '/unauthorized';
     } else if (error.response?.status === 404) {
       // window.location.href = '/not-found';
     } else if (error.response?.status === 500) {

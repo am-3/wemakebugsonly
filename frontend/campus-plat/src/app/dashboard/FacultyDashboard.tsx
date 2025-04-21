@@ -4,13 +4,23 @@ import { useClubsStore } from '../../stores';
 import { format } from 'date-fns';
 import { Club } from '../../types';
 import { useNavigate } from 'react-router-dom';
+import { useEventStore } from '../../stores/eventStore';
 
 const FacultyDashboard = () => {
   const router = useNavigate();
   const { user, logout } = useAuthStore();
   const { clubs, fetchClubs, createClub, deleteClub, updateClub } = useClubsStore();
+  const { createEvent } = useEventStore();
   const [activeTab, setActiveTab] = useState('clubs');
   const [showClubModal, setShowClubModal] = useState(false);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [selectedClub, setSelectedClub] = useState<number | null>(null);
+  const [newEvent, setNewEvent] = useState({
+    name: '',
+    description: '',
+    registration_deadline: "",
+    max_participants: 0,
+  });
   const [newClub, setNewClub] = useState({
     name: '',
     description: '',
@@ -23,7 +33,7 @@ const FacultyDashboard = () => {
 
   useEffect(() => {
     fetchClubs();
-  }, []); // Remove clubs dependency to prevent infinite loop
+  }, []); 
 
   const handleClubInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -31,6 +41,33 @@ const FacultyDashboard = () => {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleEventInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setNewEvent(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleCreateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      // TODO: Implement event creation logic here
+      newEvent.registration_deadline = new Date(newEvent.registration_deadline).toISOString();
+      await createEvent(newEvent)
+      console.log("Creating event for club:", selectedClub, newEvent);
+      setShowEventModal(false);
+      setNewEvent({
+        name: '',
+        description: '',
+        registration_deadline: new Date().toISOString(),
+        max_participants: 0,
+      });
+    } catch (error) {
+      console.error("Failed to create event:", error);
+    }
   };
 
   const handleCreateEditClub = async (e: React.FormEvent, isEdit: boolean, clubId?: number) => {
@@ -55,7 +92,7 @@ const FacultyDashboard = () => {
   const handleClubDelete = async (club: Partial<Club>) => {
     try {
       await deleteClub(club);
-      fetchClubs(); // Refresh the list of clubs
+      fetchClubs();
     } catch (error) {
       console.error("Failed to delete club:", error);
     }
@@ -69,7 +106,6 @@ const FacultyDashboard = () => {
     router(`/clubs/${clubId}`);
   };
 
-  // Rest of the component remains the same...
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className='flex justify-between items-center mb-6'>
@@ -83,7 +119,6 @@ const FacultyDashboard = () => {
       {/* Tab Navigation */}
       <div className="border-b border-gray-200 mb-6">
         <nav className="flex space-x-8">
-          
           <button
             onClick={() => setActiveTab('clubs')}
             className={`pb-4 px-1 ${
@@ -94,18 +129,11 @@ const FacultyDashboard = () => {
           >
             Club Management
           </button>
-          
         </nav>
       </div>
 
       {/* Tab Content */}
       <div className="space-y-6">
-        {/* User Management Section */}
-        
-
-        {/* Resource Management Section */}
-        
-
         {/* Club Management Section */}
         {activeTab === 'clubs' && (
           <div className="grid grid-cols-1 gap-6">
@@ -127,19 +155,25 @@ const FacultyDashboard = () => {
                   </div>
                   {club.faculty_advisor === user?.id && (
                     <div className="flex space-x-2">
-                      {/* <button className="text-blue-600 hover:text-blue-800" onClick={(e)=>{
-                        setShowClubModal(true);
-                        setIsEditMode(true);
-                        setNewClub({
-                          name: club.name,
-                          description: club.description,
-                          category: club.category,
-                          meetingLocation: club.meeting_location,
-                          facultyAdvisor: club.faculty_advisor!,
-                        });
-
-                      }}>Edit</button> */}
-                      <button className="text-red-600 hover:text-red-800" onClick={() => handleClubDelete(club)}>Delete</button>
+                      <button 
+                        className="text-green-600 hover:text-green-800"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedClub(club.id);
+                          setShowEventModal(true);
+                        }}
+                      >
+                        Create Event
+                      </button>
+                      <button 
+                        className="text-red-600 hover:text-red-800" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleClubDelete(club);
+                        }}
+                      >
+                        Delete
+                      </button>
                     </div>
                   )}
                 </div>
@@ -147,24 +181,9 @@ const FacultyDashboard = () => {
             </div>
           </div>
         )}
+      </div>
 
-        </div>
-
-      {/* Stats Overview */}
-      {/* <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h4 className="text-gray-500 font-medium">Total Users</h4>
-          <p className="text-3xl font-bold text-gray-800 mt-2">1,234</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h4 className="text-gray-500 font-medium">Active Resources</h4>
-          <p className="text-3xl font-bold text-gray-800 mt-2">45</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h4 className="text-gray-500 font-medium">Pending Approvals</h4>
-          <p className="text-3xl font-bold text-gray-800 mt-2">12</p>
-        </div>
-      </div> */}
+      {/* Club Modal */}
       {showClubModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
@@ -233,19 +252,6 @@ const FacultyDashboard = () => {
                 />
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Faculty Advisor
-                </label>
-                <input
-                  type="text"
-                  name="facultyAdvisor"
-                  value={newClub.facultyAdvisor}
-                  onChange={handleClubInputChange}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
-                />
-              </div>
-              
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
@@ -266,7 +272,110 @@ const FacultyDashboard = () => {
         </div>
       )}
 
-      
+      {/* Event Modal */}
+      {showEventModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Create New Event</h3>
+              <button 
+                onClick={() => setShowEventModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateEvent} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Event Title
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={newEvent.name}
+                  onChange={handleEventInputChange}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={newEvent.description}
+                  onChange={handleEventInputChange}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  rows={3}
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Date
+                </label>
+                <input
+                  type="datetime-local"
+                  name="registration_deadline"
+                  value={newEvent.registration_deadline}
+                  onChange={handleEventInputChange}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  required
+                />
+              </div>
+
+              {/* <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Time
+                </label>
+                <input
+                  type="time"
+                  name="time"
+                  value={newEvent.time}
+                  onChange={handleEventInputChange}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  required
+                />
+              </div> */}
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Max Participants
+                </label>
+                <input
+                  type="number"
+                  name="max_participants"
+                  value={newEvent.max_participants}
+                  onChange={handleEventInputChange}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  required
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowEventModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Create Event
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
