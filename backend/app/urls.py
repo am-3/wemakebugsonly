@@ -26,7 +26,7 @@ urlpatterns = [
     path('api/auth/login/', views.LoginView.as_view(), name='login'),
     path('api/auth/logout/', views.LogoutView.as_view(), name='logout'),
     path('api/auth/refresh/', views.TokenRefreshView.as_view(), name='refresh'),
-    path('api/auth/user/<int:user_id>', views.UserDetailView.as_view(), name='user-detail'),
+    path('api/auth/users/<int:user_id>', views.UserDetailView.as_view(), name='user-detail'),
 
     # Clubs
     path('api/clubs/', views.ClubListCreateView.as_view(), name='club-list'),

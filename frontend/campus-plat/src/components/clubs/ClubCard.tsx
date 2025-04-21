@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import api from '../../services/api';
 
 interface Club {
   id: number;
@@ -26,6 +27,31 @@ const ClubCard: React.FC<ClubCardProps> = ({
   onViewMembers, 
   onViewEvents 
 }) => {
+  const getFacultyAdvisorDetails = async () => {
+    if (club.faculty_advisor) {
+      try {
+        // Here you would typically make an API call to get advisor details
+        // For example:
+        const response = await api.get(`/auth/users/${club.faculty_advisor}`);
+        return await response.data;
+        console.log(`Getting details for advisor: ${club.faculty_advisor}`);
+      } catch (error) {
+        console.error('Error fetching faculty advisor details:', error);
+      }
+    }
+  };
+  const [advisorDetails, setAdvisorDetails] = React.useState(null);
+
+  useEffect(()=> {
+    const fetchAdvisorDetails = async () => {
+      const response = await getFacultyAdvisorDetails();
+      setAdvisorDetails(response);
+    };
+    
+    fetchAdvisorDetails();
+  }, [club]);
+
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden transition-all hover:shadow-lg">
       <div className={`h-2 ${club.status === 'active' ? 'bg-green-500' : 'bg-gray-400'}`}></div>
@@ -92,7 +118,7 @@ const ClubCard: React.FC<ClubCardProps> = ({
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              <span>Advisor: {club.faculty_advisor}</span>
+              <span>Advisor: {advisorDetails?.first_name} {advisorDetails?.last_name}</span>
             </div>
           )}
 

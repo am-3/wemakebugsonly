@@ -30,6 +30,7 @@ interface AuthState {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (userData: SignupData) => Promise<void>;
+  setAccessToken: (accessToken: string) => void;
   logout: () => void;
   refreshTokenInit: () => Promise<void>;
   validateToken: () => boolean;
@@ -47,6 +48,11 @@ export const useAuthStore = create<AuthState>()(
       user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user') || '') : null,
       loading: false,
       error: null,
+
+      setAccessToken: (accessToken) => {
+        localStorage.setItem('accessToken', accessToken);
+        set({ accessToken });
+      },
 
       refreshTokenInit: async () => {
         set({ loading: true, error: null });
