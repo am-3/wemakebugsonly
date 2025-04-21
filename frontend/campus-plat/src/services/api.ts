@@ -9,7 +9,8 @@ const api: AxiosInstance = axios.create({
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = useAuthStore.getState().accessToken;
-  if (token && config.headers) {
+
+  if (token && config.headers && !config.url?.includes("login")) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   config.headers['Content-Type'] ='application/json';
@@ -18,16 +19,38 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 
 api.interceptors.response.use(
   response => response,
-  error => {
+  async error => {
     if (error.response?.status === 401) {
-      useAuthStore.getState().logout();
-      window.location.href = '/login';
+      console.log(error.request);
+      
+      const authStore = useAuthStore.getState();
+      if (error.request?.responseUrl?.includes('api/auth/refresh')) {
+        authStore.logout();
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+
+      const refreshToken = authStore.refreshToken;
+
+      if (refreshToken) {
+        try {
+          authStore.refreshTokenInit();
+        } catch (refreshError) {
+          authStore.logout();
+          window.location.href = '/login';
+        }
+      } else {
+        // authStore.logout();
+        // window.location.href = '/login';
+      }
+      // useAuthStore.getState().logout();
+      // window.location.href = '/login';
     } else if (error.response?.status === 403) {
       window.location.href = '/unauthorized';
     } else if (error.response?.status === 404) {
       // window.location.href = '/not-found';
     } else if (error.response?.status === 500) {
-      window.location.href = '/internal-server-error';
+      // window.location.href = '/internal-server-error';
     }
     return Promise.reject(error);
   }

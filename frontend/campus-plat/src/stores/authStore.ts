@@ -7,28 +7,31 @@ import api from '../services/api';
 import { User } from '../types';
 
 // Schema validation
-const roles = z.enum(['student', 'faculty', 'admin']);
+const roles = z.enum(['student', 'faculty', 'admin', '']);
 const TokenDataSchema = z.object({
+  token_type: z.literal('access'),
   exp: z.number(),
-  sub: z.string(),
-  username: z.string(),
-  role: roles,
+  iat: z.number(),
+  jti: z.string(),
+  user_id: z.number(),
 });
 
-type Role = z.infer<typeof roles>;
+export type Role = z.infer<typeof roles>;
 type TokenData = z.infer<typeof TokenDataSchema>;
 
 interface AuthState {
   accessToken: string | null;
+  refreshToken: string | null;
   tokenData: TokenData | null;
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
   role: Role | null;
   user: User | null;
-  login: (username: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   signup: (userData: SignupData) => Promise<void>;
   logout: () => void;
+  refreshTokenInit: () => Promise<void>;
   validateToken: () => boolean;
   initialize: () => void;
 }
@@ -37,35 +40,82 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       accessToken: localStorage.getItem('accessToken'),
+      refreshToken: localStorage.getItem('refreshToken'),
       tokenData: localStorage.getItem('tokenData') ? JSON.parse(localStorage.getItem('tokenData') || '') : null,
       isAuthenticated: localStorage.getItem('isAuthenticated') === "true",
       role: localStorage.getItem('role') == 'student' ? 'student' : localStorage.getItem('role') == 'faculty' ? 'faculty' : 'admin',
-      user: null,
+      user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user') || '') : null,
       loading: false,
       error: null,
 
-      login: async (username, password) => {
+      refreshTokenInit: async () => {
         set({ loading: true, error: null });
         try {
-          const response = await api.post('/auth/login/', { username, password }, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
-          console.log(response.data);
-          const { access } = response.data;
-          const decoded = TokenDataSchema.parse(jwtDecode(access));
-
+          const response = await api.post('/auth/refresh/', { refresh_token: get().refreshToken });
+          const accessToken = response.data.access;
+          const refreshToken = response.data.refresh;
+          const decoded = TokenDataSchema.parse(jwtDecode(accessToken));
           
-          localStorage.setItem('accessToken', access);
+          localStorage.setItem('accessToken', accessToken);
+          localStorage.setItem('refreshToken', refreshToken);
           localStorage.setItem('tokenData', JSON.stringify(decoded));
           localStorage.setItem('isAuthenticated', "true");
-          localStorage.setItem('role', decoded.role);
+
           set({
-            accessToken: access,
+            accessToken,
             tokenData: decoded,
-            isAuthenticated: true,
             loading: false,
+            isAuthenticated: true,
           });
         } catch (error) {
+          set({
+            error: error instanceof Error? error.message : 'Refresh token failed',
+            loading: false,
+            isAuthenticated: false
+          });
+          throw error;
+        }
+      },
+
+      login: async (email, password) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await api.post('/auth/login/', { email, password }, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+          const accessToken = response.data.access_token;
+          const refreshToken = response.data.refresh_token;
+          const user = response.data.user;
+          const decoded = TokenDataSchema.parse(jwtDecode(accessToken));
+
+          localStorage.setItem('accessToken', accessToken);
+          localStorage.setItem('refreshToken', refreshToken);
+          localStorage.setItem('tokenData', JSON.stringify(decoded));
+          localStorage.setItem('isAuthenticated', "true");
+          localStorage.setItem('role', user.role);
+          localStorage.setItem('user', JSON.stringify(user));
+
+          set({
+            role: user.role,
+            accessToken,
+            tokenData: decoded,
+            loading: false,
+            isAuthenticated: true,
+           user: {
+            id: user.id,
+            last_name: user.last_name,
+            first_name: user.first_name,
+            email: user.email,
+            role: user.role,
+            profile_picture: user.profile_picture,
+           } 
+          });
+        } catch (error) {
+          let errorMessage = error instanceof Error ? error.response.data['error'] : 'Login failed';
+          if (errorMessage['error'] == 'Invalid email or password') {
+            errorMessage = 'Invalid email or password';
+          }
+          
           set({ 
-            error: error instanceof Error ? error.message : 'Login failed',
+            error: errorMessage,
             loading: false,
             isAuthenticated: false
           });
@@ -76,16 +126,25 @@ export const useAuthStore = create<AuthState>()(
       signup: async (userData) => {
         set({ loading: true, error: null });
         try {
-          const response = await api.post('/auth/signup/', userData);
-          const { access } = response.data;
-          const decoded = TokenDataSchema.parse(jwtDecode(access));
+          const response = await api.post('/auth/register/', userData);
+          if (response.data['message'] == "User has been registered") {
           
-          set({
-            accessToken: access,
-            tokenData: decoded,
-            isAuthenticated: true,
-            loading: false,
-          });
+            set({
+              loading: false,
+              isAuthenticated: true
+            });
+            
+          } else {
+            
+            set({
+              error: response.data['message'],
+              loading: false,
+              isAuthenticated: false
+            });
+
+            throw new Error(response.data['message']);
+          }
+          
         } catch (error) {
           set({ 
             error: error instanceof Error ? error.message : 'Signup failed',
@@ -96,12 +155,15 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      logout: () => {
+      logout: async () => {
+        const response = await api.post('/auth/logout/', {refresh_token: get().refreshToken});
         localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('tokenData');
         localStorage.removeItem('isAuthenticated');
         set({
           accessToken: null,
+          refreshToken: null,
           tokenData: null,
           isAuthenticated: false,
           loading: false,
@@ -149,13 +211,13 @@ export const useAuthStore = create<AuthState>()(
 );
 
 interface SignupData {
-  username: string;
   email: string;
   password: string;
   first_name: string;
   last_name: string;
   role: Role;
 }
+
 
 // export const useAuthStore = create<AuthState>()(
 //   persist(

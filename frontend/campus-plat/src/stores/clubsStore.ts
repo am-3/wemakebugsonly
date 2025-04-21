@@ -12,7 +12,7 @@ interface ClubsState {
   createClub: (clubData: Partial<Club>) => Promise<Club>;
   getClubDetails: (clubId: number) => Promise<Club>;
   updateClub: (clubId: number, clubData: Partial<Club>) => Promise<Club>;
-  deleteClub: (clubId: number) => Promise<void>;
+  deleteClub: (clubData: Partial<Club>) => Promise<void>;
 }
 
 export const useClubsStore = create<ClubsState>((set, get) => ({
@@ -79,13 +79,13 @@ export const useClubsStore = create<ClubsState>((set, get) => ({
     }
   },
 
-  deleteClub: async (clubId) => {
+  deleteClub: async (clubData) => {
     set({ loading: true, error: null });
     try {
-      await ClubService.deleteClub(clubId);
+      await ClubService.deleteClub(clubData.name!);
       set((state) => ({
-        clubs: state.clubs.filter(club => club.id !== clubId),
-        currentClub: state.currentClub?.id === clubId ? null : state.currentClub,
+        clubs: state.clubs.filter(club => club.id !== clubData.id),
+        currentClub: state.currentClub?.id === clubData.id ? null : state.currentClub,
         loading: false,
         error: null
       }));
