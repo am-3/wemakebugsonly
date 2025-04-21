@@ -334,7 +334,7 @@ class EventDetailUpdateDeleteView(APIView):
             event = Event.objects.get(id=event_id)
             
             # Check if user has permissions to update event (coordinator or faculty)
-            if not request.user.has_perm('can_update_event', event):
+            if request.user.role not in ['faculty', 'coordinator']:
                 return Response({'error': 'You do not have permission to update this event'}, status=status.HTTP_403_FORBIDDEN)
 
             serializer = EventSerializer(event, data=request.data)
@@ -353,7 +353,7 @@ class EventDetailUpdateDeleteView(APIView):
             event = Event.objects.get(id=event_id)
             
             # Check if user has permissions to delete event (coordinator or faculty)
-            if not request.user.has_perm('can_delete_event', event):
+            if request.user.role not in ['faculty', 'coordinator']:
                 return Response({'error': 'You do not have permission to delete this event'}, status=status.HTTP_403_FORBIDDEN)
 
             event.delete()
