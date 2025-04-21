@@ -21,6 +21,8 @@ from .models import (
     User,
 )
 from django.utils import timezone
+from rest_framework import serializers
+from .models import Event
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -138,6 +140,7 @@ class EventSerializer(serializers.ModelSerializer):
         model = Event
         fields = ['id', 'club', 'title', 'description', 'date',
                   'location', 'registration_deadline', 'max_participants']
+                  
 
 
 class EventRegistrationSerializer(serializers.ModelSerializer):

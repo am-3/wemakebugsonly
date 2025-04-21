@@ -38,6 +38,8 @@ urlpatterns = [
     # path('api/events/<int:event_id>/', views.EventDetailView.as_view(), name='event-detail'),
     path('api/events/<int:event_id>/register/', views.EventRegistrationView.as_view(), name='event-register'),
     # path('api/events/<int:event_id>/attendance/<int:user_id>/', views.AttendanceUpdateView.as_view(), name='update-attendance'),
+    path('events/', views.EventListCreateView.as_view(), name='event_list_create'),
+    path('events/<int:event_id>/', views.EventDetailUpdateDeleteView.as_view(), name='event_detail_update_delete'),
 
     # Certificates
     # path('api/certificates/', views.CertificateListView.as_view(), name='certificate-list'),

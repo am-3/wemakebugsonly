@@ -1,42 +1,50 @@
-# views.py
-from functools import partial
-import re
-from rest_framework.permissions import AllowAny
-from rest_framework_simplejwt.tokens import RefreshToken, TokenError
-from .models import User  # Import your custom User model
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.permissions import AllowAny, IsAuthenticated
-import io
+from datetime import datetime, timedelta
 import base64
-# import face_recognition  # Would need to be installed
+import io
+import re
+
 import numpy as np
 from PIL import Image
-from datetime import datetime
-from .serializers import AttendanceSessionSerializer, ClubMembershipSerializer
-from .models import AttendanceSession, Attendance, FacialRecognitionData, AttendanceLog
-from .serializers import CourseSerializer, AssessmentSerializer, GradeReportSerializer
-from .models import Course, StudentCourse, Assessment, StudentAssessment, GradeReport, Attendance
-from datetime import datetime, timedelta
-from .serializers import ResourceSerializer
-# from .serializers import BookingSerializer
-from .models import Resource, ResourceBooking
-from .serializers import ClubSerializer, EventSerializer
-from .models import Club, ClubMembership, Event, EventRegistration
-from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth import authenticate
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.authtoken.models import Token
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+
+from .models import (
+    User, Course, StudentCourse, Assessment, StudentAssessment, GradeReport,
+    AttendanceSession, Attendance, FacialRecognitionData, AttendanceLog,
+    Resource, ResourceBooking,
+    Club, ClubMembership, Event, EventRegistration
+)
+
+from .serializers import (
+    UserSerializer, CourseSerializer, AssessmentSerializer, GradeReportSerializer,
+    AttendanceSessionSerializer, ClubMembershipSerializer,
+    ResourceSerializer, ClubSerializer, EventSerializer
+    # BookingSerializer,  # Uncomment when ready
+)
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponseForbidden
+from django.contrib.auth.decorators import login_required
+from .models import Event, Club, User
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-from django.contrib.auth import authenticate
-from rest_framework.authtoken.models import Token
-
-from .serializers import UserSerializer
+from .models import Event
+from .serializers import EventSerializer
+from django.utils import timezone
 
 ##############################################################################################################################
-
-# Register User (Student, Faculty)
-
-
+# Authentication
 class RegisterView(APIView):
+    ''' 
+    Registers a user (Student/Faculty)
+    '''
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -48,6 +56,9 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
+    '''
+    Checks if the user is logged, if else proceeds to authentication
+    '''
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -74,6 +85,9 @@ class LoginView(APIView):
 
 
 class LogoutView(APIView):
+    '''
+    Logs user out and clears tokens
+    '''
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -116,12 +130,13 @@ class TokenRefreshView(APIView):
             # Handle invalid or expired refresh tokens
             return Response({'error': 'Invalid or expired refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
 
+
 ##############################################################################################################################
-
-# views.py
-
-
+#Clubs
 class ClubListCreateView(APIView):
+    '''
+    CRUD for Clubs
+    '''
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -178,6 +193,8 @@ class ClubListCreateView(APIView):
 
 
 class ClubMembershipListCreateView(APIView):
+    '''
+    CRUD for Club members with restricted permissions for operations to coordinators and faculties'''
     def get(self, request):
         club_name = request.GET.get('club_name', None)
         member_roll_no = request.GET.get('member_roll_no', None)
@@ -275,8 +292,87 @@ class ClubMembershipListCreateView(APIView):
             return Response({"message": "User removed successfully"})
         return Response({"message": "User not present in Club"})
 
+##############################################################################################################################
+#Events
+class EventListCreateView(APIView):
+    '''
+    GET: List all events
+    POST: Create a new event (Only for coordinators and faculty)
+    '''
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        events = Event.objects.all()
+        serializer = EventSerializer(events, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        # Check if user has permissions to create event (coordinator or faculty)
+        if not request.user.has_perm('can_create_event'):
+            return Response({'error': 'You do not have permission to create events'}, status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = EventSerializer(data=request.data)
+        if serializer.is_valid():
+            event = serializer.save(created_by=request.user)
+            return Response({
+                'message': 'Event created successfully',
+                'event': EventSerializer(event).data
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class EventDetailUpdateDeleteView(APIView):
+    '''
+    GET: Retrieve an event
+    PUT: Update an event
+    DELETE: Delete an event
+    '''
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, event_id):
+        try:
+            event = Event.objects.get(id=event_id)
+            serializer = EventSerializer(event)
+            return Response(serializer.data)
+        except Event.DoesNotExist:
+            return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request, event_id):
+        try:
+            event = Event.objects.get(id=event_id)
+            
+            # Check if user has permissions to update event (coordinator or faculty)
+            if not request.user.has_perm('can_update_event', event):
+                return Response({'error': 'You do not have permission to update this event'}, status=status.HTTP_403_FORBIDDEN)
+
+            serializer = EventSerializer(event, data=request.data)
+            if serializer.is_valid():
+                event = serializer.save()
+                return Response({
+                    'message': 'Event updated successfully',
+                    'event': EventSerializer(event).data
+                }, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Event.DoesNotExist:
+            return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, event_id):
+        try:
+            event = Event.objects.get(id=event_id)
+            
+            # Check if user has permissions to delete event (coordinator or faculty)
+            if not request.user.has_perm('can_delete_event', event):
+                return Response({'error': 'You do not have permission to delete this event'}, status=status.HTTP_403_FORBIDDEN)
+
+            event.delete()
+            return Response({'message': 'Event deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+        except Event.DoesNotExist:
+            return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+        
 class EventRegistrationView(APIView):
+    '''
+    CRUD for Events
+    '''
     permission_classes = [IsAuthenticated]
 
     def post(self, request, event_id):
