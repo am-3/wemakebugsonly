@@ -115,7 +115,7 @@ class Event(models.Model):
     end_time = models.TextField()
     location = models.CharField(max_length=255, blank=True, null=True)
     max_participants = models.IntegerField(blank=True, null=True)
-    registration_deadline = models.DateTimeField(blank=True, null=True)
+    registration_deadline = models.TextField(blank=True, null=True)
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default='upcoming')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
