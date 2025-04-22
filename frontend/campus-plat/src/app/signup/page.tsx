@@ -58,7 +58,7 @@ const SignupPage: React.FC = () => {
         last_name: form.last_name.trim(),
         email: form.email.trim().toLowerCase(),
         password: form.password,
-        role: "faculty" as Role,
+        role: "student" as Role,
       };
       await signup(userData);
       setSuccess(true);

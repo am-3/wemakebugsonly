@@ -9,13 +9,11 @@ const StudentDashboard = () => {
   const navigate  = useNavigate();
   const { user, logout } = useAuthStore();
   const { clubs, fetchClubs } = useClubsStore();
-  const { events, fetchEvents } = useEventStore();
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   useEffect(() => {
     Promise.all([
       fetchClubs(),
-      fetchEvents(),
     ]);
   }, []);
 
@@ -29,7 +27,7 @@ const StudentDashboard = () => {
       <div className="flex justify-between items-center mb-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Welcome back, {user?.first_name}</h1>
-          <p className="text-gray-600 mt-2">Here's your academic overview</p>
+          <p className="text-gray-600 mt-2">Here's your dashboard</p>
         </div>
         
         <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -44,10 +42,10 @@ const StudentDashboard = () => {
         <div className="lg:col-span-3 space-y-6">
           {/* Upcoming Events Section */}
           <div className="bg-white p-6 rounded-xl shadow-sm">
-            <div className="flex items-center mb-4">
+            {/* <div className="flex items-center mb-4">
               <Calendar className="w-6 h-6 text-purple-600 mr-2" />
               <h3 className="text-lg font-semibold">Upcoming Events</h3>
-            </div>
+            </div> */}
             <div className="space-y-4">
               {/* {events.slice(0, 3).map(event => (
                 <div key={event.id} className="flex items-center p-4 hover:bg-gray-50 rounded-lg">

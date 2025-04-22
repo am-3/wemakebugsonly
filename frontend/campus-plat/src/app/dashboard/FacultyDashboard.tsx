@@ -18,6 +18,7 @@ const FacultyDashboard = () => {
   const [newEvent, setNewEvent] = useState({
     name: '',
     description: '',
+    date: "",
     registration_deadline: "",
     max_participants: 0,
   });
@@ -55,6 +56,7 @@ const FacultyDashboard = () => {
     e.preventDefault();
     try {
       // TODO: Implement event creation logic here
+      newEvent.date = new Date(newEvent.date).toISOString();
       newEvent.registration_deadline = new Date(newEvent.registration_deadline).toISOString();
       await createEvent(newEvent)
       console.log("Creating event for club:", selectedClub, newEvent);
@@ -62,6 +64,7 @@ const FacultyDashboard = () => {
       setNewEvent({
         name: '',
         description: '',
+        date: new Date().toISOString(),
         registration_deadline: new Date().toISOString(),
         max_participants: 0,
       });
@@ -155,7 +158,7 @@ const FacultyDashboard = () => {
                   </div>
                   {club.faculty_advisor === user?.id && (
                     <div className="flex space-x-2">
-                      <button 
+                      {/* <button 
                         className="text-green-600 hover:text-green-800"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -164,7 +167,7 @@ const FacultyDashboard = () => {
                         }}
                       >
                         Create Event
-                      </button>
+                      </button> */}
                       <button 
                         className="text-red-600 hover:text-red-800" 
                         onClick={(e) => {
@@ -321,6 +324,19 @@ const FacultyDashboard = () => {
                 </label>
                 <input
                   type="datetime-local"
+                  name="date"
+                  value={newEvent.date}
+                  onChange={handleEventInputChange}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Registration Deadline
+                </label>
+                <input
+                  type="datetime-local"
                   name="registration_deadline"
                   value={newEvent.registration_deadline}
                   onChange={handleEventInputChange}
@@ -365,12 +381,12 @@ const FacultyDashboard = () => {
                 >
                   Cancel
                 </button>
-                <button
+                {/* <button
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
                   Create Event
-                </button>
+                </button> */}
               </div>
             </form>
           </div>
